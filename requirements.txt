@@ -9,3 +9,5 @@ seaborn
 circle_fit
 opencv-python
 imageio-ffmpeg
+
+# torch
