@@ -20,8 +20,8 @@ def filter_trajectory(x : np.ndarray, y : np.ndarray, window_length = 5):
     """
     smooths x and y array using savitzky-golay filters
     """
-    x_smooth = savgol_filter(x, window_length=window_length)
-    y_smooth = savgol_filter(y, window_length=window_length)
+    x_smooth = savgol_filter(x, window_length=window_length, polyorder=2)
+    y_smooth = savgol_filter(y, window_length=window_length, polyorder=2)
     return x_smooth, y_smooth
 
 
@@ -29,7 +29,7 @@ def get_embedding(values : np.ndarray):
     """
     return minium, maximum, mean, 25th, 50th (median), 75th percentile of value 
     """
-    np.stack([np.min(values), 
+    return np.stack([np.min(values), 
               np.max(values),
               np.mean(values),
               np.percentile(values, 25),

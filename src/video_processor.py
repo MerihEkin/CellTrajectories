@@ -1,4 +1,5 @@
 import os
+import sys
 import csv
 import cv2
 import pims
@@ -17,7 +18,9 @@ import matplotlib.patches as patches
 import btrack
 from btrack import btypes
 
-import src.video_processor_utils as utils
+sys.path.append(".")
+
+import video_processor_utils as utils
 
 trackpy.quiet(suppress=True)
 

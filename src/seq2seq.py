@@ -12,6 +12,12 @@ good results for distinguishing between circular and directional
 trajectories. 
 
 Could be useful for us but our trajectories are a bit more complex.
+
+A Denoising Hybrid Model for Anomaly Detection in
+Trajectory Sequences
+
+https://mever.gr/publications/A%20Denoising%20Hybrid%20Model%20for%20Anomaly%20Detection%20in%20Trajectory%20Sequences.pdf
+
 """
 
 class Encoder(nn.Module):
