@@ -16,7 +16,7 @@ def interpolate_tracjectory(x, y, t : np.ndarray):
     return x_interp(t_new), y_interp(t_new), t_new
 
 
-def filter_trajectory(x : np.ndarray, y : np.ndarray, window_length = 5):
+def filter_trajectory(x : np.ndarray, y : np.ndarray, window_length = 15):
     """
     smooths x and y array using savitzky-golay filters
     """
