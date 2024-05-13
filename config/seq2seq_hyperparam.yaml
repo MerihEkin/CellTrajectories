@@ -1,0 +1,12 @@
+# Hyperparameters for learning 
+learning_rate : 0.001
+nr_epochs : 2
+optimizer : Adam
+dropout : 0.1
+seq_len : 150
+
+input_dim : 18
+hidden_dim : 90
+
+# Datapath 
+datapath : '/home/ekin/LPL/CellTrajectories/data/tensors'

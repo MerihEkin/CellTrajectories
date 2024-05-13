@@ -61,22 +61,20 @@ class Encoder(nn.Module):
                 bias=params.bias,
                 bidirectional=params.bidirectional,
                 dropout=params.dropout,
-                batch_first=True
+                batch_first=False
             )
         else:
             raise ValueError("Unsupported RNN type")
+        
+        self.seq_len = params.seq_len
 
 
     def forward(self, x):
         if self.params.rnn_type == RnnType.GRU:
-             o_n, h_n = self.nn(x)
+            outputs, hidden = self.nn(x)
         elif self.params.rnn_type == RnnType.LSTM:
-            o_n, (h_n, c_n) = self.nn(x)
-        
-        hidden = h_n[-1]
-        # hidden = torch.cat([h_n[i, ...] for i in range(h_n.shape[0])], dim=1)
-        
-        return hidden
+            outputs, (hidden, cell) = self.nn(x)       
+        return hidden[-1]
         
 
 class Decoder(nn.Module):
@@ -92,24 +90,20 @@ class Decoder(nn.Module):
                 bias=params.bias,
                 bidirectional=params.bidirectional,
                 dropout=params.dropout,
-                batch_first=True
+                batch_first=False
             )
         else:
             raise ValueError("Unsupported RNN type")
         self.fc = nn.Linear(in_features=params.num_features, out_features=params.num_features)
 
 
-    def forward(self, x):
-        """
-        Our aim in this autoencode structure is to reconstruct a point of interest
-        using the neighbourhood of that point.
-        So we do not have to construct the whole thing, as long as we can represent 
-        a point of interest meaningfully.
-        """
-        # x = x.unsqueeze(1).repeat(1, self.params.seq_len, 1)
-        out_rnn, _ = self.nn(x)
-        out = self.fc(out_rnn)
-        return out
+    def forward(self, x, hidden, cell):
+        if hidden is None or cell is None:
+            output, (hidden, cell) = self.nn(x)
+        else:
+            output, (hidden, cell) = self.nn(x, (hidden, cell))
+        prediction = self.fc(output.squeeze(0))
+        return prediction, hidden, cell
     
 
 class RNNAE(nn.Module):
@@ -121,11 +115,19 @@ class RNNAE(nn.Module):
         self.encoder = Encoder(params=params).to(self.device)
         self.decoder = Decoder(params=params).to(self.device)
 
+        self.seq_len = params.seq_len
+        self.num_features = params.num_features
+
 
     def forward(self, x):
-        latent_representation = self.encoder(x)
-        output = self.decoder(latent_representation)
-        return output
+        h_T = self.encoder(x)
+        outputs = torch.zeros(self.seq_len, 1, self.num_features).to(device)
+        prediction, hidden, cell = self.decoder(h_T, None, None)
+        outputs[0, :, :] = prediction.unsqueeze(0)
+        for i in range(1, self.seq_len):
+            prediction, hidden, cell = self.decoder(h_T, hidden, cell)
+            outputs[i, :, :] = prediction.unsqueeze(0)
+        return outputs
     
 
 def train(model, dataset, batch_size, epochs, lr, device):
@@ -137,17 +139,16 @@ def train(model, dataset, batch_size, epochs, lr, device):
     for epoch in range(epochs):
         running_loss = 0.0
         for i, data in enumerate(dataloader, 0):
-            inputs, labels = data
+            inputs, _ = data
 
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            inputs = inputs.squeeze(0).unsqueeze(1).to(device)
             
             # Zero the parameter gradients
             optimizer.zero_grad()
 
             # Forward pass + backward pass + optimize
             outputs = model(inputs)
-            loss = criterion(outputs, labels)
+            loss = criterion(outputs, inputs)
             loss.backward()
             optimizer.step()
 
@@ -168,7 +169,7 @@ if __name__ == '__main__':
     params.dropout = 0.1
     params.rnn_type = RnnType.LSTM
     params.num_layers = 2
-    params.learning_rate = 0.1
+    params.learning_rate = 0.001
     params.hidden_size = 4
 
     dir = os.path.join(os.getcwd(), 'data', 'tensors')
@@ -179,4 +180,4 @@ if __name__ == '__main__':
         device=device,
         params=params
     )
-    train(model=model, dataset=dataset, batch_size=64, epochs=1, lr=params.learning_rate, device=device)
+    train(model, dataset, 1, 1, params.learning_rate, device)

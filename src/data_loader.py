@@ -92,7 +92,11 @@ class TrackDataset(Dataset):
   def load_data(self):
     total_len = 0
     for i, file in enumerate(self.files):
-      self.data.append(torch.load(file))
+      data = torch.load(file)
+      mean = torch.mean(data, dim=0)
+      std = torch.std(data, dim=0)
+      normalized_data = (data - mean) / std
+      self.data.append(normalized_data)
       if i == 0:
         self.data_lengths[i] = 0
       else:
